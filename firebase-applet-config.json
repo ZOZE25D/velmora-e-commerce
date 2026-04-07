@@ -1,0 +1,10 @@
+{
+  "projectId": "velmora-e-commerce",
+  "appId": "1:350968571024:web:9df0e60d6a5936a4a0e415",
+  "apiKey": "AIzaSyBYVmSJj0ZVifjgq0AWUuM59l_k85x9ITM",
+  "authDomain": "velmora-e-commerce.web.app",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "velmora-e-commerce.firebasestorage.app",
+  "messagingSenderId": "350968571024",
+  "measurementId": ""
+}

@@ -1,0 +1,303 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: products
+    // Fields: name, price, category, image, description, details, images, sizes, colors, isNew
+    //
+    // Collection: users
+    // Fields: name, email, role, createdAt
+    //
+    // Collection: orders
+    // Fields: userId, items, totalPrice, status, shippingAddress, createdAt
+    //
+    // Collection: favorites
+    // Fields: productIds
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email == "ziadr276@gmail.com" ||
+        request.auth.token.email == "zoza82132@gmail.com" ||
+        request.auth.token.email == "bahaaah123@gmail.com" ||
+        request.auth.token.email == "BAHAAAH123@GMAIL.COM"
+      );
+    }
+
+    function isApprovedSupplier() {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/suppliers/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/suppliers/$(request.auth.uid)).data.status == 'approved';
+    }
+
+    function isValidProduct(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+             data.price is number && data.price >= 0 &&
+             data.category is string && data.category.size() < 50 &&
+             data.image is string && data.image.size() < 1000000 &&
+             (!('description' in data) || (data.description is string && data.description.size() < 2000)) &&
+             (!('supplierId' in data) || (data.supplierId is string && data.supplierId.size() < 100));
+    }
+
+    function isValidUser(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
+             data.role in ['customer', 'supplier', 'admin'] &&
+             (isAdmin() || !('role' in data) || data.role != 'admin') &&
+             (isAdmin() || !('uid' in data) || data.uid == request.auth.uid) &&
+             (!('updatedAt' in data) || data.updatedAt is string) &&
+             (!('createdAt' in data) || data.createdAt is string);
+    }
+
+    function isValidSupplier(data) {
+      return data.userId == request.auth.uid &&
+             data.storeName is string && data.storeName.size() > 0 && data.storeName.size() < 100 &&
+             data.phone is string && data.phone.size() > 0 && data.phone.size() < 20 &&
+             data.address is string && data.address.size() > 0 && data.address.size() < 500 &&
+             data.status in ['pending', 'approved', 'rejected'] &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() < 100)) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() < 100)) &&
+             (!('email' in data) || (data.email is string && data.email.size() < 100)) &&
+             (!('name' in data) || (data.name is string && data.name.size() < 100));
+    }
+
+    function isValidOrder(data) {
+      return data.items is list &&
+             data.totalPrice is number &&
+             data.status in ['pending', 'confirmed', 'shipped', 'completed', 'delivered', 'cancelled'] &&
+             data.shippingAddress is map &&
+             data.shippingAddress.name is string &&
+             data.shippingAddress.address is string &&
+             data.shippingAddress.city is string &&
+             data.shippingAddress.region is string &&
+             data.shippingAddress.phone is string &&
+             data.shippingAddress.email is string;
+    }
+
+    function isValidOrderCreate(data) {
+      return data.userId == request.auth.uid && isValidOrder(data);
+    }
+
+    function isValidFavorites(data) {
+      return data.productIds is list;
+    }
+
+    function isValidSubscriber(data) {
+      return data.email is string && 
+             data.email.size() > 3 &&
+             data.createdAt is string;
+    }
+
+    function isValidApplication(data) {
+      return data.fullName is string && data.fullName.size() > 0 &&
+             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
+             data.position is string &&
+             data.createdAt is string;
+    }
+
+    function isValidMessage(data) {
+      return data.name is string && data.name.size() > 0 &&
+             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
+             data.subject is string &&
+             data.message is string && data.message.size() > 0 &&
+             data.createdAt is string;
+    }
+
+    function isValidNotification(data) {
+      return data.userId is string && data.userId.size() > 0 &&
+             data.title is string && data.title.size() > 0 &&
+             data.message is string && data.message.size() > 0 &&
+             data.type in ["order_status", "new_product", "promotion", "system"] &&
+             data.read is bool &&
+             data.createdAt is string;
+    }
+
+    function isValidReview(data) {
+      return data.productId is string && data.productId.size() > 0 &&
+             data.userId == request.auth.uid &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             (!('comment' in data) || (data.comment is string && data.comment.size() < 1000)) &&
+             data.createdAt is string;
+    }
+
+    function isValidReturn(data) {
+      return data.orderId is string &&
+             data.userId == request.auth.uid &&
+             data.items is list &&
+             data.reason is string &&
+             data.status in ['pending', 'approved', 'rejected', 'completed'] &&
+             data.createdAt is string &&
+             (!('userName' in data) || (data.userName is string && data.userName.size() < 100)) &&
+             (!('userEmail' in data) || (data.userEmail is string && data.userEmail.size() < 100));
+    }
+
+    function isValidSetting(data) {
+      return data.siteName is string &&
+             data.contactEmail is string &&
+             data.updatedAt is string;
+    }
+
+    function isValidSale(data) {
+      return data.productId is string && data.productId.size() > 0 &&
+             data.discount is number && data.discount > 0 &&
+             data.discountType in ['percentage', 'fixed'] &&
+             data.startDate is string &&
+             data.endDate is string &&
+             data.status in ['active', 'inactive'] &&
+             (!('supplierId' in data) || (data.supplierId is string && data.supplierId.size() < 100));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    // Products: Everyone can read, only admins and approved suppliers can write
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if isAdmin() || (isApprovedSupplier() && request.resource.data.supplierId == request.auth.uid && isValidProduct(request.resource.data));
+      allow update: if isAdmin() || (isApprovedSupplier() && resource.data.supplierId == request.auth.uid && request.resource.data.supplierId == request.auth.uid && isValidProduct(request.resource.data));
+      allow delete: if isAdmin() || (isApprovedSupplier() && resource.data.supplierId == request.auth.uid);
+    }
+
+    // Sales: Everyone can read, only admins and approved suppliers can write
+    match /sales/{saleId} {
+      allow read: if true;
+      allow create: if isAdmin() || (isApprovedSupplier() && request.resource.data.supplierId == request.auth.uid && isValidSale(request.resource.data));
+      allow update: if isAdmin() || (isApprovedSupplier() && resource.data.supplierId == request.auth.uid && request.resource.data.supplierId == request.auth.uid && isValidSale(request.resource.data));
+      allow delete: if isAdmin() || (isApprovedSupplier() && resource.data.supplierId == request.auth.uid);
+    }
+
+    // Users: Users can read/write their own profile
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data) && 
+                    (isAdmin() || request.resource.data.role == resource.data.role || (resource.data.role == 'customer' && request.resource.data.role == 'supplier'));
+      allow delete: if isAdmin();
+    }
+
+    // Suppliers: Users can read/write their own supplier profile, admins can manage all
+    match /suppliers/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidSupplier(request.resource.data);
+      allow update: if isAdmin() || (isOwner(userId) && isValidSupplier(request.resource.data) && (request.resource.data.status == resource.data.status || isAdmin()));
+      allow delete: if isAdmin();
+    }
+
+    // Orders: Users can read/write their own orders, public can track by ID
+    match /orders/{orderId} {
+      allow get: if true;
+      allow list: if (isAuthenticated() && (
+        resource.data.userId == request.auth.uid || 
+        isAdmin() || 
+        (isApprovedSupplier() && ('supplierIds' in resource.data && request.auth.uid in resource.data.supplierIds))
+      )) || (request.query.limit <= 1);
+      
+      allow create: if isAuthenticated() && isValidOrderCreate(request.resource.data);
+      
+      allow update: if isAdmin() || (
+        isAuthenticated() && 
+        (
+          // Customer can cancel their own pending order
+          (resource.data.userId == request.auth.uid && 
+           resource.data.status == 'pending' &&
+           request.resource.data.status == 'cancelled' &&
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])) ||
+          
+          // Customer can request return for their own completed order
+          (resource.data.userId == request.auth.uid && 
+           resource.data.status == 'completed' &&
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['returnStatus', 'updatedAt'])) ||
+          
+          // Approved supplier can update status of orders they are part of
+          (isApprovedSupplier() && 
+           ('supplierIds' in resource.data && request.auth.uid in resource.data.supplierIds) &&
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']))
+        ) && (
+          // Ensure the resulting document is still a valid order
+          // We use a less strict check for updates to avoid breaking old orders
+          request.resource.data.status in ['pending', 'confirmed', 'shipped', 'completed', 'delivered', 'cancelled']
+        )
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Favorites: Users can read/write their own favorites
+    match /favorites/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && isValidFavorites(request.resource.data);
+    }
+
+    // Subscribers: Anyone can subscribe, only admins can read
+    match /subscribers/{email} {
+      allow read: if isAdmin();
+      allow create, update: if isValidSubscriber(request.resource.data) && request.resource.data.email == email;
+      allow delete: if isAdmin();
+    }
+
+    // Applications: Anyone can apply, only admins can read
+    match /applications/{applicationId} {
+      allow read: if isAdmin();
+      allow create: if isValidApplication(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    // Messages: Anyone can send message, only admins can read
+    match /messages/{messageId} {
+      allow read: if isAdmin();
+      allow create: if isValidMessage(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    // Notifications: Users can read/update their own notifications, admins can manage all
+    match /notifications/{notificationId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isAdmin() || (isAuthenticated() && request.resource.data.userId != request.auth.uid); // Allow users to notify others (e.g. supplier)
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']));
+      allow delete: if isAdmin();
+    }
+
+    // Reviews: Everyone can read, only authenticated users can write their own
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidReview(request.resource.data);
+      allow update: if (isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid)) && isValidReview(request.resource.data);
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+    }
+
+    // Returns: Users can read/write their own returns, admins can manage all
+    match /returns/{returnId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && isValidReturn(request.resource.data);
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'reason', 'items']));
+      allow delete: if isAdmin();
+    }
+
+    // Settings: Everyone can read, only admins can write
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // OTPs: Only backend (admin) can read/write. Deny all client access.
+    match /otps/{target} {
+      allow read, write: if false;
+    }
+  }
+}

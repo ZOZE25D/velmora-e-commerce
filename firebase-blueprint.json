@@ -1,0 +1,287 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "An e-commerce product",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "image": { "type": "string" },
+        "description": { "type": "string" },
+        "details": { "type": "array", "items": { "type": "string" } },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "sizes": { "type": "array", "items": { "type": "string" } },
+        "colors": { 
+          "type": "array", 
+          "items": { 
+            "type": "object", 
+            "properties": {
+              "name": { "type": "string" },
+              "hex": { "type": "string" }
+            }
+          } 
+        },
+        "isNew": { "type": "boolean" },
+        "supplierId": { "type": "string" }
+      },
+      "required": ["name", "price", "category", "image"]
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "A registered vendor/supplier",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "storeName": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "storeName", "phone", "address", "status"]
+    },
+    "User": {
+      "title": "User",
+      "description": "A registered user",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["customer", "supplier", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "role"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A customer order",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "items": { 
+          "type": "array", 
+          "items": {
+            "type": "object",
+            "properties": {
+              "productId": { "type": "string" },
+              "name": { "type": "string" },
+              "price": { "type": "number" },
+              "image": { "type": "string" },
+              "quantity": { "type": "number" },
+              "size": { "type": "string" },
+              "color": { "type": "string" }
+            }
+          }
+        },
+        "totalPrice": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["visa", "instapay", "cod"] },
+        "paymentScreenshot": { "type": "string", "description": "Base64 or URL of the payment screenshot for InstaPay" },
+        "paymentStatus": { "type": "string", "enum": ["pending", "paid", "refunded"], "description": "Current status of the payment" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "shipped", "completed", "delivered", "cancelled"] },
+        "shippingAddress": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "address": { "type": "string" },
+            "city": { "type": "string" },
+            "region": { "type": "string" },
+            "phone": { "type": "string" },
+            "email": { "type": "string" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "items", "totalPrice", "status", "shippingAddress"]
+    },
+    "Favorites": {
+      "title": "Favorites",
+      "description": "User favorite products",
+      "type": "object",
+      "properties": {
+        "productIds": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["productIds"]
+    },
+    "Subscriber": {
+      "title": "Subscriber",
+      "description": "Newsletter subscriber",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "createdAt"]
+    },
+    "JobApplication": {
+      "title": "JobApplication",
+      "description": "Job application submission",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "position": { "type": "string" },
+        "resumeUrl": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fullName", "email", "position", "createdAt"]
+    },
+    "ContactMessage": {
+      "title": "ContactMessage",
+      "description": "Contact form submission",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "subject", "message", "createdAt"]
+    },
+    "OTP": {
+      "title": "OTP",
+      "description": "One-time password for verification",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "expires": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["code", "expires", "createdAt"]
+    },
+    "Sale": {
+      "title": "Sale",
+      "description": "A product discount/sale",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "discount": { "type": "number" },
+        "discountType": { "type": "string", "enum": ["percentage", "fixed"] },
+        "startDate": { "type": "string", "format": "date-time" },
+        "endDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "supplierId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "discount", "discountType", "startDate", "endDate", "status"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "A product review from a customer",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "userId", "rating", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "A user notification",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["order_status", "new_product", "promotion", "system"] },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "message", "type", "read", "createdAt"]
+    },
+    "ReturnRequest": {
+      "title": "ReturnRequest",
+      "description": "A customer request to return items from an order",
+      "type": "object",
+      "properties": {
+        "orderId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "items": { 
+          "type": "array", 
+          "items": {
+            "type": "object",
+            "properties": {
+              "productId": { "type": "string" },
+              "name": { "type": "string" },
+              "quantity": { "type": "number" },
+              "size": { "type": "string" },
+              "color": { "type": "string" },
+              "price": { "type": "number" }
+            }
+          }
+        },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "completed"] },
+        "adminComment": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["orderId", "userId", "items", "reason", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Collection of products"
+    },
+    "/sales/{saleId}": {
+      "schema": "Sale",
+      "description": "Collection of product discounts"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection of user profiles"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Collection of customer orders"
+    },
+    "/favorites/{userId}": {
+      "schema": "Favorites",
+      "description": "User favorite products"
+    },
+    "/subscribers/{email}": {
+      "schema": "Subscriber",
+      "description": "Newsletter subscribers"
+    },
+    "/applications/{applicationId}": {
+      "schema": "JobApplication",
+      "description": "Job applications"
+    },
+    "/messages/{messageId}": {
+      "schema": "ContactMessage",
+      "description": "Contact messages"
+    },
+    "/otps/{target}": {
+      "schema": "OTP",
+      "description": "Collection of one-time passwords"
+    },
+    "/suppliers/{userId}": {
+      "schema": "Supplier",
+      "description": "Collection of supplier profiles"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Collection of product reviews"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Collection of user notifications"
+    },
+    "/returns/{returnId}": {
+      "schema": "ReturnRequest",
+      "description": "Collection of return requests"
+    }
+  }
+}

@@ -1,0 +1,131 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
+@import "tailwindcss";
+
+@variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+@theme {
+  --color-velmora-50: #faf9f6;
+  --color-velmora-100: #f5f2ed;
+  --color-velmora-200: #e8e2d9;
+  --color-velmora-300: #d6ccbc;
+  --color-velmora-400: #bfae96;
+  --color-velmora-500: #a68d60;
+  --color-velmora-600: #8c7651;
+  --color-velmora-700: #736142;
+  --color-velmora-800: #594b33;
+  --color-velmora-900: #121212;
+  --color-velmora-950: #0a0a0a;
+
+  --font-display: "Playfair Display", serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
+  --text-6xl: 3.75rem;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+  }
+  body {
+    background-color: #faf9f6;
+    color: #121212;
+    @apply font-sans antialiased transition-colors duration-500 leading-relaxed;
+  }
+
+  [data-theme='dark'] body {
+    background-color: #0a0a0a;
+    color: #f5f2ed;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight;
+  }
+
+  h1 { @apply text-4xl md:text-6xl font-bold; }
+  h2 { @apply text-3xl md:text-4xl font-semibold; }
+  h3 { @apply text-2xl md:text-3xl font-medium; }
+
+  p { @apply text-base text-velmora-800/80 dark:text-velmora-100/70; }
+
+  /* Global Button Hover Animations */
+  button, 
+  [role="button"],
+  .btn {
+    @apply transition-all duration-500 ease-[cubic-bezier(0.175,0.885,0.32,1.275)];
+    position: relative;
+    overflow: hidden;
+  }
+
+  button:hover, 
+  [role="button"]:hover,
+  .btn:hover {
+    @apply -translate-y-1 scale-[1.03] brightness-110;
+    filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.15)) hue-rotate(5deg);
+  }
+
+  button:active, 
+  [role="button"]:active,
+  .btn:active {
+    @apply scale-95 duration-150;
+    filter: brightness(0.9);
+  }
+
+  /* Add a subtle shine effect on hover for all buttons */
+  button::after,
+  [role="button"]::after,
+  .btn::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      45deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent
+    );
+    transform: rotate(45deg) translateX(-100%);
+    transition: transform 0.6s ease-in-out;
+    pointer-events: none;
+  }
+
+  button:hover::after,
+  [role="button"]:hover::after,
+  .btn:hover::after {
+    transform: rotate(45deg) translateX(100%);
+  }
+
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .glass {
+    @apply bg-white/10 backdrop-blur-md border border-white/20 shadow-xl;
+  }
+
+  .glass-dark {
+    @apply bg-black/20 backdrop-blur-lg border border-white/5 shadow-2xl;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+  }
+
+  .text-glow-gold {
+    text-shadow: 0 0 20px rgba(166, 141, 96, 0.5);
+  }
+}
